@@ -1,6 +1,6 @@
 # node-red-contrib-snowboy
 
-Node-RED node for Snowboy (bases on nodejs Snowboy : a customizable hotword detection engine for you to create your own hotword like "OK Google" or "Alexa".
+Node-RED node for Snowboy (bases on nodejs Snowboy : a customizable hotword detection engine for you to create your own hotword like "OK Google" or "Alexa").
 
 ## Prerequisites
 This node-red node is based on Snowboy nodejs, so first install it ([Snowboy](https://www.npmjs.com/package/snowboy)).

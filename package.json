@@ -8,7 +8,8 @@
 		}
 	},
 	"dependencies": {
-		"snowboy": ">=1.1.0"
+		"snowboy": ">=1.1.0",
+		"isstream": ">=0.1.2"
 	},
 	"license": "MIT",
 	"author": {

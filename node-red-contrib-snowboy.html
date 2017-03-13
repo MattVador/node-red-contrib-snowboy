@@ -1,0 +1,55 @@
+<script type="text/javascript">
+    RED.nodes.registerType('Snowboy',{
+        category: 'input',
+        color: '#a6bbcf',
+        icon: "feed.png",
+        label: function() {
+            return this.name || "Snowboy";
+        },
+	    defaults: {
+	        name: {value:""},
+	        modelFile: {value:""},
+	        detectorFile: {value:""},
+	        sensitivity: {value:"0.5"},
+	        hotwords: {value:""}
+	    },
+	    inputs:1,
+	    outputs:1
+    });
+</script>
+
+<script type="text/x-red" data-template-name="Snowboy">
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i>Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-modelFile"><i class="icon-tag"></i>Model file</label>
+        <input type="text" id="node-input-modelFile" placeholder="*.pmdl, *.umdl">
+    </div>
+    <div class="form-row">
+        <label for="node-input-detectorFile"><i class="icon-tag"></i>Detector file</label>
+        <input type="text" id="node-input-detectorFile" placeholder="*.res">
+    </div>
+    <div class="form-row">
+        <label for="node-input-sensitivity"><i class="icon-tag"></i>Sensitivity</label>
+        <input type="text" id="node-input-sensitivity" placeholder="0.5">
+    </div>
+    <div class="form-row">
+        <label for="node-input-hotwords"><i class="icon-tag"></i>Hotwords</label>
+        <input type="text" id="node-input-hotwords" placeholder="Jarvis">
+    </div>
+</script>
+
+<script type="text/x-red" data-help-name="Snowboy">
+    <p><h2>Snowboy</h2></p>
+    <p>This API listen for a hotword and then send a message</p>
+	<p><u>Input</u></p>
+    <ul>
+		<li><code>msg.payload</code>: Readable stream or Buffer</li>
+    </ul>
+	<p><u>Output</u></p>
+    <ul>
+        <li><code>msg.payload</code>: Hotword detected</li>
+    </ul>
+</script>

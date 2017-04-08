@@ -11,7 +11,8 @@
 	        modelFile: {value:""},
 	        detectorFile: {value:""},
 	        sensitivity: {value:"0.5"},
-	        hotwords: {value:""}
+	        hotwords: {value:""},
+	        debug: {value:false}
 	    },
 	    inputs:1,
 	    outputs:1
@@ -39,6 +40,13 @@
         <label for="node-input-hotwords"><i class="icon-tag"></i>Hotwords</label>
         <input type="text" id="node-input-hotwords" placeholder="Jarvis">
     </div>
+	<div class="form-row">
+		<label for="node-input-debug"><i class="icon-tag"></i> debug</label>
+		<select id="node-input-debug">
+			<option value=false>false</option>
+			<option value=true>true</option>
+		</select>
+	</div>
 </script>
 
 <script type="text/x-red" data-help-name="Snowboy">

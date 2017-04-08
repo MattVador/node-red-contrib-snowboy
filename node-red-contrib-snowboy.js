@@ -12,7 +12,7 @@ module.exports = function(RED) {
 	function Snowboy_Node(config) {
 		RED.nodes.createNode(this, config);
 		var node = this;
-		
+		node.config = config;
 		node.inputStream = null;
 
 		var models = new Models();
@@ -21,7 +21,7 @@ module.exports = function(RED) {
 			sensitivity : config.sensitivity,
 			hotwords : config.hotwords
 		});
-		
+
 		var detector = new Detector({
 			resource : config.detectorFile,
 			models : models,
@@ -29,15 +29,17 @@ module.exports = function(RED) {
 		});
 
 		detector.on('silence', function() {
-			node.log('Silence detected');
+			if( node.config.debug == true )
+				node.log('Silence detected');
 		});
 
 		detector.on('sound', function() {
-			node.log('Sound detected');
+			if( node.config.debug == true )
+				node.log('Sound detected');
 		});
 
 		detector.on('error', function() {
-			node.log('Error in detector: ' + error);
+			node.error('Error in detector: ' + error);
 		});
 
 		detector.on('hotword', function(index, hotword) {
@@ -50,7 +52,8 @@ module.exports = function(RED) {
 		});
 
 		node.on('input', function(msg) {
-			node.log("Event input");
+			if( node.config.debug == true )
+				node.log("Event input");
 
 			node.msg = msg;
 
@@ -75,7 +78,9 @@ module.exports = function(RED) {
 		});
 
 		node.on('close', function() {
-			node.log("Event close");
+			if( node.config.debug == true )
+				node.log("Event close");
+
 			if( node.inputStream != null )
 				node.inputStream.unpipe(detector);
 			detector.end();

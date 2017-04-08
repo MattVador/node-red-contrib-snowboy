@@ -29,6 +29,7 @@ The Snowboy node comprises the following options:
 * **Detector file**: File name of the snowboy detector (like common.res)
 * **Sensitivity**: Number between 0 and 1 indicate the level to detect hotword. Default: `0.5`
 * **Hotwords**: Hotword to detect (like `jarvis`)
+* **Debug**: Set it to true if you want more log
 
 ## Snowboy
 [Home Page](https://snowboy.kitt.ai)

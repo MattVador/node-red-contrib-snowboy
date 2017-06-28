@@ -1,6 +1,6 @@
-module.exports = function(RED) {
-//	model : 'resources/jarvis.pmdl',
-//	detector : 'resources/common.res',
+module.exports = function (RED) {
+	//	model : 'resources/jarvis.pmdl',
+	//	detector : 'resources/common.res',
 
 	Detector = require('snowboy').Detector;
 	Models = require('snowboy').Models;
@@ -16,57 +16,54 @@ module.exports = function(RED) {
 		node.inputStream = null;
 
 		var models = new Models();
-		models.add({
-			file : config.modelFile,
-			sensitivity : config.sensitivity,
-			hotwords : config.hotwords
-		});
+		node.config.models.forEach(function (element) {
+			models.add(element);
+		}, this);
 
+		config.detectorFile = "/home/pi/.node-red/node_modules/snowboy/resources/common.res"
 		var detector = new Detector({
-			resource : config.detectorFile,
-			models : models,
-			audioGain : 2.0
+			resource: config.detectorFile,
+			models: models,
+			audioGain: 2.0
 		});
 
-		detector.on('silence', function() {
-			if( node.config.debug == true )
+
+		detector.on('silence', function () {
+			if (node.config.debug == true)
 				node.log('Silence detected');
 		});
 
-		detector.on('sound', function() {
-			if( node.config.debug == true )
+		detector.on('sound', function () {
+			if (node.config.debug == true)
 				node.log('Sound detected');
 		});
 
-		detector.on('error', function() {
+		detector.on('error', function (error) {
 			node.error('Error in detector: ' + error);
 		});
 
-		detector.on('hotword', function(index, hotword) {
+		detector.on('hotword', function (index, hotword) {
 			node.log('Hotword detected: ' + index + " - " + hotword);
-			if( node.inputStream != null )
-				node.inputStream.unpipe(detector);
-
 			node.msg.payload = hotword;
 			node.send(node.msg);
 		});
 
-		node.on('input', function(msg) {
-			if( node.config.debug == true )
+		node.on('input', function (msg) {
+			if (node.config.debug == true)
 				node.log("Event input");
 
 			node.msg = msg;
 
-			if( isReadableStream(msg.payload) ) {
+			if (isReadableStream(msg.payload)) {
 				if (node.inputStream != msg.payload) {
-					if( node.inputStream != null )
+					if (node.inputStream != null)
 						node.inputStream.unpipe(detector);
 
 					node.inputStream = msg.payload;
 					node.inputStream.pipe(detector);
 				}
-			} else if( Buffer.isBuffer(msg.payload) ) {
-				if( node.inputStream != null ) {
+			} else if (Buffer.isBuffer(msg.payload)) {
+				if (node.inputStream != null) {
 					node.inputStream.unpipe(detector);
 					node.inputStream = null;
 				}
@@ -77,11 +74,11 @@ module.exports = function(RED) {
 			}
 		});
 
-		node.on('close', function() {
-			if( node.config.debug == true )
+		node.on('close', function () {
+			if (node.config.debug == true)
 				node.log("Event close");
 
-			if( node.inputStream != null )
+			if (node.inputStream != null)
 				node.inputStream.unpipe(detector);
 			detector.end();
 		});

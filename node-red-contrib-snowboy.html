@@ -1,21 +1,45 @@
 <script type="text/javascript">
-    RED.nodes.registerType('Snowboy',{
+    RED.nodes.registerType('Snowboy', {
         category: 'input',
         color: '#a6bbcf',
         icon: "feed.png",
-        label: function() {
+        label: function () {
             return this.name || "Snowboy";
         },
-	    defaults: {
-	        name: {value:""},
-	        modelFile: {value:""},
-	        detectorFile: {value:""},
-	        sensitivity: {value:"0.5"},
-	        hotwords: {value:""},
-	        debug: {value:false}
-	    },
-	    inputs:1,
-	    outputs:1
+        defaults: {
+            name: { value: "" },
+            models: { value: [] },
+            detectorFile: { value: "", required: true },
+            debug: { value: false }
+        },
+        inputs: 1,
+        outputs: 1,
+        oneditprepare: function () {
+            $("#addModel").on('click', () => {
+                this.models.push({
+                    hotwords: $("#addModelHotword").val(),
+                    sensitivity: $("#addModelSensitivity").val(),
+                    file: $("#addModelFile").val()
+                })
+                populateModels()
+            })
+            removeHotword = (index) => {
+                this.models.splice(index, 1)
+                populateModels()
+            }
+            var populateModels = () => {
+                var hotwordsContent = "<table>"
+                for (var i = 0; i < this.models.length; i++) {
+                    $("#hotwordList").append("<tr>")
+                    hotwordsContent += "<td width='80%'>" + this.models[i].hotwords + "</td>"
+                    hotwordsContent += "<td><button onclick='removeHotword(" + i + ")'>Remove</button></td>"
+                    hotwordsContent += "</tr>"
+                };
+                $("#hotwordList").html(hotwordsContent)
+            }
+
+            populateModels();
+        }
     });
 </script>
 
@@ -25,38 +49,48 @@
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
     <div class="form-row">
-        <label for="node-input-modelFile"><i class="icon-tag"></i>Model file</label>
-        <input type="text" id="node-input-modelFile" placeholder="*.pmdl, *.umdl">
-    </div>
-    <div class="form-row">
         <label for="node-input-detectorFile"><i class="icon-tag"></i>Detector file</label>
         <input type="text" id="node-input-detectorFile" placeholder="*.res">
     </div>
-    <div class="form-row">
-        <label for="node-input-sensitivity"><i class="icon-tag"></i>Sensitivity</label>
-        <input type="text" id="node-input-sensitivity" placeholder="0.5">
+    <div class="form-row" style="display:inline-flex">
+        <label for="hotwords"><i class="icon-tag"></i>Hotwords</label>
+        <div id="hotwords">
+            <div id="hotwordList" style="padding: 10px; border: 1px; border-style: solid; border-radius: 20px;">
+            </div>
+        </div>
     </div>
     <div class="form-row">
-        <label for="node-input-hotwords"><i class="icon-tag"></i>Hotwords</label>
-        <input type="text" id="node-input-hotwords" placeholder="Jarvis">
+        <label for="newModel"><i class="icon-tag"></i>Add Hotword</label>
+        <div id="newModel" style="display:inline-flex">
+            <input id="addModelHotword" type="text" required>
+            <input id="addModelSensitivity" style="width: 5em" type="number" step="0.01" min="0" max="1" value="0.5">
+            <input id="addModelFile" type="text" placeholder="*.pmdl, *.umdl" required>
+            <button id="addModel">Add</button>
+        </div>
     </div>
-	<div class="form-row">
-		<label for="node-input-debug"><i class="icon-tag"></i> debug</label>
-		<select id="node-input-debug">
-			<option value=false>false</option>
-			<option value=true>true</option>
-		</select>
-	</div>
+    <div class="form-row">
+        <label for="node-input-debug"><i class="icon-tag"></i> debug</label>
+        <select id="node-input-debug">
+            <option value=false>false</option>
+            <option value=true>true</option>
+        </select>
+    </div>
 </script>
 
 <script type="text/x-red" data-help-name="Snowboy">
-    <p><h2>Snowboy</h2></p>
+    <p>
+        <h2>Snowboy</h2>
+    </p>
     <p>This API listen for a hotword and then send a message</p>
-	<p><u>Input</u></p>
+    <p>
+        <u>Input</u>
+    </p>
     <ul>
-		<li><code>msg.payload</code>: Readable stream or Buffer</li>
+        <li><code>msg.payload</code>: Readable stream or Buffer</li>
     </ul>
-	<p><u>Output</u></p>
+    <p>
+        <u>Output</u>
+    </p>
     <ul>
         <li><code>msg.payload</code>: Hotword detected</li>
     </ul>

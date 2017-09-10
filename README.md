@@ -25,10 +25,14 @@ The snowboy node emit a message with the hotword detected as the payload. The st
 
 The Snowboy node comprises the following options:
 
-* **Model file**: File name of the snowboy model (like jarvis.pmdl)
 * **Detector file**: File name of the snowboy detector (like common.res)
-* **Sensitivity**: Number between 0 and 1 indicate the level to detect hotword. Default: `0.5`
-* **Hotwords**: Hotword to detect (like `jarvis`)
+* **Models**: List of model
+	* **Hotwords**: Hotwords to detect (like `jarvis`)
+	* **Sensitivity**: Number between 0 and 1 indicate the level to detect hotwords. Default: `0.5`
+	* **Model file**: File name of the snowboy model (like jarvis.pmdl)
+* **Multiple output**:
+	* **False**: One output for all the hotwords
+	* **True**: One output for each hotword.
 * **Debug**: Set it to true if you want more log
 
 ## Snowboy

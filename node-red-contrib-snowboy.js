@@ -1,6 +1,6 @@
 module.exports = function(RED) {
-//	model : 'resources/jarvis.pmdl',
-//	detector : 'resources/common.res',
+	// model : 'resources/jarvis.pmdl',
+	// detector : 'resources/common.res',
 
 	Detector = require('snowboy').Detector;
 	Models = require('snowboy').Models;
@@ -15,30 +15,36 @@ module.exports = function(RED) {
 		node.config = config;
 		node.inputStream = null;
 
+		if( node.config.models == null || node.config.detectorFile == null ) {
+			node.error('Config missing !!!');
+			return;
+		}
+
 		var models = new Models();
-		models.add({
-			file : config.modelFile,
-			sensitivity : config.sensitivity,
-			hotwords : config.hotwords
+		node.config.models.forEach(function(element) {
+			models.add(element);
 		});
 
 		var detector = new Detector({
-			resource : config.detectorFile,
-			models : models,
-			audioGain : 2.0
+			resource: node.config.detectorFile,
+			models: models,
+			audioGain: 2.0
 		});
 
+		var lastModel = node.config.models[node.config.models.length - 1];
+		node.config.nbOutputs = lastModel.idxOutput + lastModel.nbOutputs;
+		
 		detector.on('silence', function() {
-			if( node.config.debug == true )
+			if( node.config.debug == true || node.config.debug == "true" )
 				node.log('Silence detected');
 		});
 
 		detector.on('sound', function() {
-			if( node.config.debug == true )
+			if( node.config.debug == true || node.config.debug == "true" )
 				node.log('Sound detected');
 		});
 
-		detector.on('error', function() {
+		detector.on('error', function(error) {
 			node.error('Error in detector: ' + error);
 		});
 
@@ -48,11 +54,23 @@ module.exports = function(RED) {
 				node.inputStream.unpipe(detector);
 
 			node.msg.payload = hotword;
-			node.send(node.msg);
+			index--;
+			
+			if( node.config.multipleOutput == true || node.config.multipleOutput == "true" ) {
+				var outputs = [];
+				for( var i = 0; i < node.config.nbOutputs; i++) {
+					if( i == index )
+						outputs.push(node.msg);
+					else
+						outputs.push(null);
+				}
+				node.send(outputs);
+			} else
+				node.send(node.msg);
 		});
 
 		node.on('input', function(msg) {
-			if( node.config.debug == true )
+			if( node.config.debug == true || node.config.debug == "true" )
 				node.log("Event input");
 
 			node.msg = msg;
@@ -78,7 +96,7 @@ module.exports = function(RED) {
 		});
 
 		node.on('close', function() {
-			if( node.config.debug == true )
+			if( node.config.debug == true || node.config.debug == "true" )
 				node.log("Event close");
 
 			if( node.inputStream != null )

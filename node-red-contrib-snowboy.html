@@ -1,45 +1,194 @@
 <script type="text/javascript">
-    RED.nodes.registerType('Snowboy',{
-        category: 'input',
-        color: '#a6bbcf',
-        icon: "feed.png",
-        label: function() {
-            return this.name || "Snowboy";
-        },
-	    defaults: {
-	        name: {value:""},
-	        modelFile: {value:""},
-	        detectorFile: {value:""},
-	        sensitivity: {value:"0.5"},
-	        hotwords: {value:""},
-	        debug: {value:false}
-	    },
-	    inputs:1,
-	    outputs:1
-    });
+	RED.nodes.registerType('Snowboy', {
+		category: 'input',
+		color: '#a6bbcf',
+		icon: "feed.png",
+		label: function() {
+			return this.name || "Snowboy";
+		},
+		defaults: {
+			name: { value: "" },
+			detectorFile: { value: "", required: true },
+			models: { value: [{}], required: true },
+			multipleOutput: { value: "false", required: true},
+			debug: { value: "false" }
+		},
+		inputs: 1,
+		outputs: 1,
+		outputLabels: function(index) {
+			var label = "";
+			for( var i = this.models.length - 1; i >= 0; i-- ) {
+				if( this.models[i].idxOutput <= index ) {
+					var hotwords = this.models[i].hotwords.split(',');
+					label = hotwords[index - this.models[i].idxOutput];
+					break;
+				}
+			}
+			return label;
+		},
+		oneditprepare: function() {
+			var node = this;
+			
+			function resizeModel(model) {
+			    var newWidth = model.width();
+			    
+			    var hotwordsField = model.find(".node-input-model-hotwords-value");
+			    var sensitivityField = model.find(".node-input-model-sensitivity-value");
+			    var fileField = model.find(".node-input-model-file-value");
+			    
+			    var fixedWidth = hotwordsField.width() + sensitivityField.width() + 90;
+			    fileField.width(newWidth - fixedWidth);
+			}
+			
+            function sortItems(models) {
+                var models = $("#node-input-model-container").editableList('items');
+            	var multipleOutput = $("#node-input-multipleOutput").val();
+                if( multipleOutput == true || multipleOutput == "true" )
+	                models.each(function(i) { $(this).find(".node-input-model-index").html(i+1); });
+                else
+	                models.each(function(i) { $(this).find(".node-input-model-index").html(1); });
+            }
+
+            $("#node-input-model-container").css('min-height','250px').css('min-width','450px').editableList({
+                addItem: function(container,index,opt) {
+                    if (!opt.hasOwnProperty('data')) {
+                        opt.data = {};
+                    }
+                    var row = $('<div/>').appendTo(container);
+                    var hotwordsField = $('<input/>',{placeholder:"Hotwords",required:true,class:"node-input-model-hotwords-value",type:"text",style:"width:100px; margin-left: 5px;"}).appendTo(row);
+                    var sensitivityField = $('<input/>',{placeholder:"0-1",required:true,class:"node-input-model-sensitivity-value",type:"text",style:"width:35px; margin-left: 5px;"}).appendTo(row);
+                    var fileField = $('<input/>',{placeholder:"*.pmdl, *.umdl",required:true,class:"node-input-model-file-value",type:"text",style:"width:220px; margin-left: 5px;"}).appendTo(row);
+                    var finalspan = $('<span/>',{style:"float: right;margin-top: 6px;"}).appendTo(row);
+                    if( node.multipleOutput == true || node.multipleOutput == "true" )
+                    	finalspan.append(' &#8594; <span class="node-input-model-index">'+(index+1)+'</span> ');
+                    else
+                    	finalspan.append(' &#8594; <span class="node-input-model-index">1</span> ');
+                    
+                    hotwordsField.val(opt.data.hotwords);
+                    sensitivityField.val(opt.data.sensitivity);
+                    fileField.val(opt.data.file);
+                },
+                removeItem: function(opt) {
+                    if (opt.hasOwnProperty('index')) {
+                        var removedList = $("#node-input-model-container").data('removedList')||[];
+                        removedList.push(opt.index);
+                        $("#node-input-model-container").data('removedList',removedList);
+                    }
+
+                    var models = $("#node-input-model-container").editableList('items');
+                    models.each(function(i) { $(this).find(".node-input-model-index").html(i+1); });
+                },
+                resizeItem: resizeModel,
+                sortItems: sortItems,
+                sortable: true,
+                removable: true
+            });
+
+		    $("#node-input-multipleOutput").change(sortItems);
+		    
+            for (var i=0;i<this.models.length;i++) {
+                var model = this.models[i];
+                $("#node-input-model-container").editableList('addItem',{data:model,index:i});
+            }
+		},
+        oneditsave: function() {
+			var items = $("#node-input-model-container").editableList('items');
+			var node = this;
+			var models = [];
+			var nbOutputs = 0;
+            var changedOutputs = {};
+            var shift = 0;
+
+            items.each(function(i) {
+				var item = $(this);
+                var itemData = $(this).data('data');
+				var hotwords = item.find(".node-input-model-hotwords-value").val();
+				var sensitivity = item.find(".node-input-model-sensitivity-value").val();
+				var file = item.find(".node-input-model-file-value").val();
+				var n = hotwords.split(',').length;
+				models.push({
+					'idxOutput': nbOutputs,
+					'nbOutputs': n,
+					'hotwords': hotwords,
+					'sensitivity': sensitivity,
+					'file': file
+				});
+				if( itemData.hasOwnProperty('index')) {
+					if( itemData.index !== i ) {	// Item order moved so outputs are moved to the new position
+						for( var j = 0 ; j < node.models[itemData.index].nbOutputs; j++ ) {
+							changedOutputs[node.models[itemData.index].idxOutput + j] = nbOutputs + j;
+						}
+					} else if( shift ) {			// Previous items changed their outputs so outputs are shifted
+						for( var j = node.models[itemData.index].idxOutput; j < node.models[itemData.index].idxOutput + node.models[itemData.index].nbOutputs; j++ ) {
+							changedOutputs[j] = j + shift;
+						}
+					}
+					if( models[i].nbOutputs < node.models[itemData.index].nbOutputs ) {			// Less hotwords are declared
+						var diff = models[i].nbOutputs - node.models[itemData.index].nbOutputs;
+						var begin = node.models[itemData.index].idxOutput + node.models[itemData.index].nbOutputs;
+						for( var j = begin + diff; j < begin; j++ ) {
+							changedOutputs[j] = -1;
+						}
+						shift += diff;
+					} else if( models[i].nbOutputs > node.models[itemData.index].nbOutputs ) {	// More hotwords are declared
+						var diff = models[i].nbOutputs - node.models[itemData.index].nbOutputs;
+						shift += diff;
+					}
+				}
+				nbOutputs += n;
+			});
+
+			var multipleOutput = $("#node-input-multipleOutput").val();
+			if( multipleOutput == true || multipleOutput == "true" ) {
+				var removedList = $("#node-input-model-container").data('removedList')||[];
+				removedList.forEach(function(i) {
+					for( var j = 0 ; j < node.models[i].nbOutputs; j++ ) {
+						changedOutputs[node.models[i].idxOutput + j] = -1;
+					}
+				});
+			} else {
+				for( var i = 1; i < node.outputs; i++ ) {
+					changedOutputs[i] = -1;
+				}
+				nbOutputs = 1;
+			}
+			node._outputs = changedOutputs;
+			node.outputs = nbOutputs;
+			node.models = models;
+		},
+		oneditresize: function(size) {
+			var rows = $("#dialog-form>div:not(.node-input-model-container-row)");
+			var height = size.height;
+			for (var i=0;i<rows.size();i++) {
+				height -= $(rows[i]).outerHeight(true);
+			}
+			var editorRow = $("#dialog-form>div.node-input-model-container-row");
+			height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+			$("#node-input-model-container").editableList('height',height);
+		}
+	});
 </script>
 
 <script type="text/x-red" data-template-name="Snowboy">
-    <div class="form-row">
-        <label for="node-input-name"><i class="icon-tag"></i>Name</label>
-        <input type="text" id="node-input-name" placeholder="Name">
+	<div class="form-row">
+		<label for="node-input-name"><i class="icon-tag"></i>Name</label>
+		<input type="text" id="node-input-name" placeholder="Name">
+	</div>
+	<div class="form-row">
+		<label for="node-input-detectorFile"><i class="icon-tag"></i>Detector file</label>
+		<input type="text" id="node-input-detectorFile" placeholder="*.res">
+	</div>
+    <div class="form-row node-input-model-container-row">
+		<label for="form-row node-input-model-container-row"><i class="icon-tag"></i>Models</label>
+        <ol id="node-input-model-container"></ol>
     </div>
-    <div class="form-row">
-        <label for="node-input-modelFile"><i class="icon-tag"></i>Model file</label>
-        <input type="text" id="node-input-modelFile" placeholder="*.pmdl, *.umdl">
-    </div>
-    <div class="form-row">
-        <label for="node-input-detectorFile"><i class="icon-tag"></i>Detector file</label>
-        <input type="text" id="node-input-detectorFile" placeholder="*.res">
-    </div>
-    <div class="form-row">
-        <label for="node-input-sensitivity"><i class="icon-tag"></i>Sensitivity</label>
-        <input type="text" id="node-input-sensitivity" placeholder="0.5">
-    </div>
-    <div class="form-row">
-        <label for="node-input-hotwords"><i class="icon-tag"></i>Hotwords</label>
-        <input type="text" id="node-input-hotwords" placeholder="Jarvis">
-    </div>
+	<div class="form-row">
+		<label for="node-input-multipleOutput"><i class="icon-tag"></i> Multiple output</label>
+		<select id="node-input-multipleOutput">
+			<option value=false>false</option>
+			<option value=true>true</option>
+		</select>
+	</div>
 	<div class="form-row">
 		<label for="node-input-debug"><i class="icon-tag"></i> debug</label>
 		<select id="node-input-debug">
@@ -50,14 +199,14 @@
 </script>
 
 <script type="text/x-red" data-help-name="Snowboy">
-    <p><h2>Snowboy</h2></p>
-    <p>This API listen for a hotword and then send a message</p>
+	<p><h2>Snowboy</h2></p>
+	<p>This API listen for a hotword and then send a message</p>
 	<p><u>Input</u></p>
-    <ul>
+	<ul>
 		<li><code>msg.payload</code>: Readable stream or Buffer</li>
-    </ul>
+	</ul>
 	<p><u>Output</u></p>
-    <ul>
-        <li><code>msg.payload</code>: Hotword detected</li>
-    </ul>
+	<ul>
+		<li><code>msg.payload</code>: Hotword detected</li>
+	</ul>
 </script>

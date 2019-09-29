@@ -8,13 +8,13 @@
 		},
 		defaults: {
 			name: { value: "" },
+			outputs: { value: "1" },
 			detectorFile: { value: "", required: true },
 			models: { value: [{}], required: true },
 			multipleOutput: { value: "false", required: true},
 			debug: { value: "false" }
 		},
 		inputs: 1,
-		outputs: 1,
 		outputLabels: function(index) {
 			var label = "";
 			for( var i = this.models.length - 1; i >= 0; i-- ) {
